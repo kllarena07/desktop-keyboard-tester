@@ -9,7 +9,7 @@ use winit::window::{Window, WindowId};
 #[derive(Default)]
 struct App {
     window: Option<Window>,
-    activated: HashMap<Key, bool>,
+    activated: HashMap<Key, bool>
 }
 
 impl ApplicationHandler for App {
@@ -17,13 +17,14 @@ impl ApplicationHandler for App {
         self.window = Some(event_loop.create_window(Window::default_attributes()).unwrap());
 
         let mut hm: HashMap<Key, bool> = HashMap::new();
-        for ch in 'a'..='z' {
-            hm.insert(Key::Character(ch.to_string().into()), false);
-        }
+        hm.insert(Key::Character("w".into()), false);
+        hm.insert(Key::Character("a".into()), false);
+        hm.insert(Key::Character("s".into()), false);
+        hm.insert(Key::Character("d".into()), false);
         self.activated = hm;
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, id: WindowId, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => {
                 println!("The close button was pressed; stopping");
@@ -45,10 +46,11 @@ impl ApplicationHandler for App {
                 // can render here instead.
                 self.window.as_ref().unwrap().request_redraw();
             }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
-                // self.activated.entry(event.logical_key).and_modify(|val| *val = event.state.is_pressed());
-                self.activated.entry(event.logical_key).and_modify(|val| *val = true);
-                println!("{:?}", self.activated);
+            WindowEvent::KeyboardInput { device_id, event, is_synthetic } => {
+                // if event.state.is_pressed() && !event.repeat {
+                    self.activated.entry(event.logical_key).and_modify(|val| *val = true);
+                    println!("{:?}", self.activated);
+                // }
             }
             _ => (),
         }
