@@ -41,20 +41,32 @@ impl ApplicationHandler for App {
                 println!("The close button was pressed; stopping");
                 event_loop.exit();
             },
+            WindowEvent::Resized(size) => {
+                let _ = self.pixels.as_mut().unwrap().resize_buffer(size.width, size.height).unwrap();
+            }
             WindowEvent::RedrawRequested => {
                 let window = self.window.as_ref().unwrap();
-                let window_width = window.inner_size().width as usize;
-                let window_height = window.inner_size().height as usize;
+                let window_width = window.inner_size().width;
+                let window_height = window.inner_size().height;
+                let one_third = (window_height as f32 / 3.0).floor() as usize;
+                let two_thirds = (window_height as f32 * 2.0 / 3.0).floor() as usize;
+                println!("{}", window_height);
                 if let Some(pixels) = &mut self.pixels {
                     let frame = pixels.frame_mut();
 
                     for (i, spot) in frame.chunks_exact_mut(4).enumerate() {
-                        if i % window_height == 0 {
+                        let y = i / window_width as usize;
+                        if y < one_third {
                             spot[0] = 0xFF; // R
                             spot[1] = 0x00; // G
                             spot[2] = 0x00; // B
                             spot[3] = 0xFF; // A
-                        } else {
+                        } else if y >= one_third && y < two_thirds {
+                            spot[0] = 0x00; // R
+                            spot[1] = 0xFF; // G
+                            spot[2] = 0x00; // B
+                            spot[3] = 0xFF; // A
+                        } else if y >= two_thirds {
                             spot[0] = 0x00; // R
                             spot[1] = 0x00; // G
                             spot[2] = 0xFF; // B
