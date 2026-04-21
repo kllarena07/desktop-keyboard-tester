@@ -4,17 +4,17 @@ use crate::vertex::Vertex;
 
 use wgpu::util::DeviceExt;
 
-pub struct Checkboard {
+pub struct Chessboard {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32
 }
 
-impl Checkboard {
+impl Chessboard {
     pub fn new(device: Arc<wgpu::Device>, config: Arc<wgpu::SurfaceConfiguration>) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("board.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("chessboard.wgsl").into())
         });
 
         let render_pipeline_layout =

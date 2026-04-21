@@ -1,7 +1,7 @@
 mod app;
 mod vertex;
 mod state;
-mod checkboard;
+mod chessboard;
 use crate::app::App;
 
 use winit::{

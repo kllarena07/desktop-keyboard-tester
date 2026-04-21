@@ -7,7 +7,7 @@ use winit::{
     window::Window,
 };
 
-use crate::checkboard::{Checkboard};
+use crate::chessboard::{self, Chessboard};
 
 pub struct State {
     pub surface: wgpu::Surface<'static>,
@@ -117,7 +117,7 @@ impl State {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let checkboard = Checkboard::new(Arc::clone(&self.device), Arc::clone(&self.config));
+        let chessboard = Chessboard::new(Arc::clone(&self.device), Arc::clone(&self.config));
 
         let mut encoder = self
             .device
@@ -153,9 +153,9 @@ impl State {
                 timestamp_writes: None
             });
 
-            render_pass.set_pipeline(&checkboard.render_pipeline());
-            render_pass.set_vertex_buffer(0, checkboard.vertex_buffer().slice(..));
-            render_pass.draw(0..checkboard.num_vertices(), 0..1);
+            render_pass.set_pipeline(&chessboard.render_pipeline());
+            render_pass.set_vertex_buffer(0, chessboard.vertex_buffer().slice(..));
+            render_pass.draw(0..chessboard.num_vertices(), 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
