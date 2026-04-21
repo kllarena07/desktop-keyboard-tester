@@ -1,25 +1,20 @@
-use crate::vertex::Vertex;
-
 use std::{iter, sync::Arc};
 
 use wgpu::Backends;
-use wgpu::util::DeviceExt;
 use winit::{
     event_loop::{ActiveEventLoop},
     keyboard::KeyCode,
     window::Window,
 };
 
+use crate::checkboard::{Checkboard};
+
 pub struct State {
     pub surface: wgpu::Surface<'static>,
-    pub device: wgpu::Device,
+    pub device: Arc<wgpu::Device>,
     pub queue: wgpu::Queue,
-    pub config: wgpu::SurfaceConfiguration,
-    pub is_surface_configured: bool,
-    pub render_pipeline: wgpu::RenderPipeline,
-    pub vertex_buffer: wgpu::Buffer,
+    pub config: Arc<wgpu::SurfaceConfiguration>,
     pub window: Arc<Window>,
-    pub num_vertices: u32
 }
 
 impl State {
@@ -77,136 +72,24 @@ impl State {
             view_formats: vec![],
         };
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into())
-        });
+        surface.configure(&device, &config);
 
-        let render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
-            immediate_size: 0,
-        });
-
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[
-                    Vertex::desc()
-                ], // 2.
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview_mask: None,
-            cache: None,
-        });
-
-        const WHITE: [f32; 3] = [0.925, 0.925, 0.800];
-        const GREEN: [f32; 3] = [0.450, 0.667, 0.290];
-
-        let mut vertices: Vec<Vertex> = vec![];
-
-        for i in 0..64 {
-            let color: [f32; 3] = {
-                if i % 2 == 0 {
-                    if (i / 8) % 2 == 0 {
-                        WHITE
-                    } else {
-                        GREEN
-                    }
-                } else {
-                    if (i / 8) % 2 == 0 {
-                        GREEN
-                    } else {
-                        WHITE
-                    }
-                }
-            };
-            
-            let x_offset = ((i % 8) as f32) * 0.25;
-            let y_offset = ((i / 8) as f32) * 0.25;
-
-            let mut new_vertices: Vec<Vertex> = vec![
-                Vertex { position: [-1.0 + x_offset, 1.0 - y_offset, 0.0], color },
-                Vertex { position: [-1.0 + x_offset, 0.75 - y_offset, 0.0], color },
-                Vertex { position: [-0.75 + x_offset, 1.0 - y_offset, 0.0], color },
-                Vertex { position: [-0.75 + x_offset, 0.75 - y_offset, 0.0], color },
-            ];
-
-            vertices.append(new_vertices.as_mut());
-        }
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX
-        });
-
-        let num_vertices = vertices.len() as u32;
+        let device = Arc::new(device);
+        let config = Arc::new(config);
 
         Ok(Self {
             surface,
             device,
             queue,
             config,
-            is_surface_configured: false,
             window,
-            render_pipeline,
-            vertex_buffer,
-            num_vertices
         })
-    }
-
-    pub fn resize(&mut self, width: u32, height: u32) {
-        if width > 0 && height > 0 {
-            self.config.width = width;
-            self.config.height = height;
-            self.surface.configure(&self.device, &self.config);
-            self.is_surface_configured = true;
-        }
     }
 
     pub fn update(&mut self) {}
 
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
-
-        // We can't render unless the surface is configured
-        if !self.is_surface_configured {
-            return Ok(());
-        }
 
         let output = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
@@ -234,6 +117,8 @@ impl State {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        let checkboard = Checkboard::new(Arc::clone(&self.device), Arc::clone(&self.config));
+
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -241,7 +126,6 @@ impl State {
             });
 
         {
-            // 1.
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[
@@ -269,9 +153,9 @@ impl State {
                 timestamp_writes: None
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..self.num_vertices, 0..1);
+            render_pass.set_pipeline(&checkboard.render_pipeline());
+            render_pass.set_vertex_buffer(0, checkboard.vertex_buffer().slice(..));
+            render_pass.draw(0..checkboard.num_vertices(), 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
