@@ -16,9 +16,8 @@ pub struct Piece {
 }
 
 impl Piece {
-    pub fn new(device: Arc<wgpu::Device>, config: Arc<wgpu::SurfaceConfiguration>) -> Self {
-        let diffuse_bytes = include_bytes!("../../happy-tree.png");
-        let diffuse_image = image::load_from_memory(diffuse_bytes).unwrap();
+    pub fn new(device: Arc<wgpu::Device>, config: Arc<wgpu::SurfaceConfiguration>, data: &[u8], x: f32, y: f32) -> Self {
+        let diffuse_image = image::load_from_memory(data).unwrap();
         let diffuse_rgba = diffuse_image.to_rgba8();
 
         use image::GenericImageView;
@@ -55,10 +54,10 @@ impl Piece {
         );
 
         let vertices: [Vertex; 4] = [
-            Vertex { position: [-1.0, 1.0, 0.0], tex_coords: [0.0, 0.0] },
-            Vertex { position: [-1.0, 0.75, 0.0], tex_coords: [0.0, 1.0] },
-            Vertex { position: [-0.75, 1.0, 0.0], tex_coords: [1.0, 0.0] },
-            Vertex { position: [-0.75, 0.75, 0.0], tex_coords: [1.0, 1.0] },
+            Vertex { position: [-1.0 + x, 1.0 - y, 0.0], tex_coords: [0.0, 0.0] },
+            Vertex { position: [-1.0 + x, 0.75 - y, 0.0], tex_coords: [0.0, 1.0] },
+            Vertex { position: [-0.75 + x, 1.0 - y, 0.0], tex_coords: [1.0, 0.0] },
+            Vertex { position: [-0.75 + x, 0.75 - y, 0.0], tex_coords: [1.0, 1.0] },
         ];
 
         // We don't need to configure the texture view much, so let's

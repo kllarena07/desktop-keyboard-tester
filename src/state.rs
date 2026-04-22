@@ -16,7 +16,7 @@ pub struct State {
     pub config: Arc<wgpu::SurfaceConfiguration>,
     pub window: Arc<Window>,
     chessboard: Chessboard,
-    piece: Piece
+    pieces: Vec<Piece>
 }
 
 impl State {
@@ -80,26 +80,79 @@ impl State {
         let config = Arc::new(config);
 
         let chessboard = Chessboard::new(Arc::clone(&device), Arc::clone(&config));
-        let piece = Piece::new(Arc::clone(&device), Arc::clone(&config));
 
-        queue.write_texture(
-            // Tells wgpu where to copy the pixel data
-            wgpu::TexelCopyTextureInfo {
-                texture: &piece.diffuse_texture(),
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            // The actual pixel data
-            &piece.diffuse_rgba(),
-            // The layout of the texture
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * piece.dimensions().0),
-                rows_per_image: Some(piece.dimensions().1),
-            },
-            piece.texture_size(),
-        );
+        let black_pawn = include_bytes!("../pieces/black/pawn.png");
+        let black_castle = include_bytes!("../pieces/black/castle.png");
+        let black_knight = include_bytes!("../pieces/black/knight.png");
+        let black_bishop = include_bytes!("../pieces/black/bishop.png");
+        let black_king = include_bytes!("../pieces/black/king.png");
+        let black_queen = include_bytes!("../pieces/black/queen.png");
+
+        let white_pawn = include_bytes!("../pieces/white/pawn.png");
+        let white_castle = include_bytes!("../pieces/white/castle.png");
+        let white_knight = include_bytes!("../pieces/white/knight.png");
+        let white_bishop = include_bytes!("../pieces/white/bishop.png");
+        let white_king = include_bytes!("../pieces/white/king.png");
+        let white_queen = include_bytes!("../pieces/white/queen.png");
+
+        let pieces: Vec<Piece> = vec![
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_castle, 0.00, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_knight, 0.25, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_bishop, 0.50, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_king, 0.75, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_queen, 1.00, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_bishop, 1.25, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_knight, 1.50, 0.0),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_castle, 1.75, 0.0),
+
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 0.00, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 0.25, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 0.50, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 0.75, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 1.00, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 1.25, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 1.50, 0.25),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), black_pawn, 1.75, 0.25),
+
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 0.00, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 0.25, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 0.50, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 0.75, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 1.00, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 1.25, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 1.50, 1.5),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_pawn, 1.75, 1.5),
+
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_castle, 0.00, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_knight, 0.25, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_bishop, 0.50, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_king, 0.75, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_queen, 1.00, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_bishop, 1.25, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_knight, 1.50, 1.75),
+            Piece::new(Arc::clone(&device), Arc::clone(&config), white_castle, 1.75, 1.75)
+        ];
+
+        for piece in &pieces {
+            queue.write_texture(
+                // Tells wgpu where to copy the pixel data
+                wgpu::TexelCopyTextureInfo {
+                    texture: &piece.diffuse_texture(),
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                // The actual pixel data
+                &piece.diffuse_rgba(),
+                // The layout of the texture
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(4 * piece.dimensions().0),
+                    rows_per_image: Some(piece.dimensions().1),
+                },
+                piece.texture_size(),
+            );
+        }
 
         Ok(Self {
             surface,
@@ -108,7 +161,7 @@ impl State {
             config,
             window,
             chessboard,
-            piece
+            pieces
         })
     }
 
@@ -181,10 +234,12 @@ impl State {
             render_pass.set_vertex_buffer(0, self.chessboard.vertex_buffer().slice(..));
             render_pass.draw(0..self.chessboard.num_vertices(), 0..1);
 
-            render_pass.set_pipeline(&self.piece.render_pipeline());
-            render_pass.set_bind_group(0, &self.piece.diffuse_bind_group(), &[]);
-            render_pass.set_vertex_buffer(0, self.piece.vertex_buffer().slice(..));
-            render_pass.draw(0..self.piece.num_vertices(), 0..1);
+            for piece in &self.pieces {
+                render_pass.set_pipeline(&piece.render_pipeline());
+                render_pass.set_bind_group(0, &piece.diffuse_bind_group(), &[]);
+                render_pass.set_vertex_buffer(0, piece.vertex_buffer().slice(..));
+                render_pass.draw(0..piece.num_vertices(), 0..1);
+            }
         }
 
         self.queue.submit(iter::once(encoder.finish()));
