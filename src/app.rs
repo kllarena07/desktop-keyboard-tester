@@ -63,50 +63,38 @@ impl ApplicationHandler<Renderer> for App {
             WindowEvent::CursorMoved { device_id: _, position } => {
                 self.mouse_position = Some(position);
 
-                if let (Some(grabbed_piece), Some(s)) = (self.grabbed_piece, self.state.as_mut()) {
-                    let mouse_pixel = self.mouse_position.unwrap();
-                    let (mx, my): (f32, f32) = mouse_pixel.into();
-
-                    let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
-                    let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
-
-                    println!("Tried moving {:?}", grabbed_piece);
-                }
+                // if let (Some(grabbed_piece), Some(s)) = (self.grabbed_piece, self.state.as_mut()) {
+                //     let mouse_pixel = self.mouse_position.unwrap();
+                //     let (mx, my): (f32, f32) = mouse_pixel.into();
+                //
+                //     let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
+                //     let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
+                //
+                //     println!("Tried moving {:?}", grabbed_piece);
+                // }
             },
             WindowEvent::MouseInput { state, button, .. } => match (button, state.is_pressed()) {
                 (MouseButton::Left, true) => {
-                    if let Some(s) = &self.state {
-                        let mouse_pixel = self.mouse_position.unwrap();
-                        let (mx, my): (f32, f32) = mouse_pixel.into();
-                        
-                        let piece_space_x = (mx / 600.0) * 2.0;
-                        let piece_space_y = (my / 600.0) * 2.0;
-                        
-                        let board_state = s.chessboard.get_board_state();
-                        for (i, piece) in board_state.iter().enumerate() {
-                            if let Some(p) = &piece {
-                                let px = p.x as f32 * 0.25;
-                                let py = p.y as f32 * 0.25;
-                                if px <= piece_space_x && piece_space_x <= px + 0.25 && py <= piece_space_y && piece_space_y <= py + 0.25 {
-                                    self.grabbed_piece = Some(i);
-                                    println!("Grabbed {:?}", p.piece_type);
-                                }
-                            }
-                        }
-                    };
+                    if let Some(mouse_position) = self.mouse_position {
+                        let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
+                        // this is effectively row number + column number 
+                        let selected_board_state_index = board_x + (board_y * 8);
+                        self.grabbed_piece = Some(selected_board_state_index);
+                        println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
+                    }
                 }
                 (MouseButton::Left, false) => {
-                    if let (Some(grabbed_piece), Some(s)) = (self.grabbed_piece, self.state.as_mut()) {
-                        let mouse_pixel = self.mouse_position.unwrap();
-                        let (mx, my): (f32, f32) = mouse_pixel.into();
+                    if let Some(mouse_position) = self.mouse_position {
+                        let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
+                        let new_board_pos = board_x + (board_y * 8);
 
-                        let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
-                        let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
-
-                        // s.chessboard.move_piece(grabbed_piece, (piece_space_x, piece_space_y));
-                        println!("Tried moving {:?}", grabbed_piece);
+                        if let Some(grabbed_piece) = self.grabbed_piece {
+                            if let Some(state) = self.state.as_mut() {
+                                state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
+                                state.update_piece_identity(grabbed_piece, new_board_pos);
+                            }
+                        }
                     }
-                    self.grabbed_piece = None;
                 }
                 _ => {}
             },

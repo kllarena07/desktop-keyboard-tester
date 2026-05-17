@@ -13,7 +13,7 @@ const BLACK_BISHOP_BYTES: &[u8] = include_bytes!("../../pieces/black/bishop.png"
 const BLACK_KING_BYTES: &[u8] = include_bytes!("../../pieces/black/king.png");
 const BLACK_QUEEN_BYTES: &[u8]= include_bytes!("../../pieces/black/queen.png");
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PieceType {
     WhitePawn,
     WhiteCastle,
@@ -48,21 +48,15 @@ impl PieceType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Piece {
     pub piece_type: PieceType,
-    pub x: u32,
-    pub y: u32,
 }
 
 impl Piece {
-    pub fn new(piece_type: PieceType, x: u32, y: u32) -> Self {
-        // Piece-world coordinates are based off of the dimensions of actual chessboard
-        // e.g. (0,0), (1,0), ..., (7,7)
+    pub fn new(piece_type: PieceType) -> Self {
         Self {
             piece_type,
-            x,
-            y
         }
     }
 }
