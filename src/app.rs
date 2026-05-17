@@ -1,4 +1,4 @@
-use crate::{state::State};
+use crate::renderer::Renderer;
 
 use std::{sync::Arc};
 use winit::{
@@ -6,7 +6,7 @@ use winit::{
 };
 
 pub struct App {
-    pub state: Option<State>,
+    pub state: Option<Renderer>,
     mouse_position: Option<PhysicalPosition<f64>>,
     grabbed_piece: Option<usize>
 }
@@ -21,18 +21,18 @@ impl App {
     }
 }
 
-impl ApplicationHandler<State> for App {
+impl ApplicationHandler<Renderer> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         #[allow(unused_mut)]
         let mut window_attributes = Window::default_attributes().with_inner_size(winit::dpi::LogicalSize::new(600, 600)).with_resizable(false);
 
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
-        self.state = Some(pollster::block_on(State::new(window)).unwrap());
+        self.state = Some(pollster::block_on(Renderer::new(window)).unwrap());
     }
 
     #[allow(unused_mut)]
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: Renderer) {
         self.state = Some(event);
     }
 
@@ -43,7 +43,7 @@ impl ApplicationHandler<State> for App {
         event: WindowEvent,
     ) {
         let state = match &mut self.state {
-            Some(canvas) => canvas,
+            Some(renderer) => renderer,
             None => return,
         };
 
@@ -70,7 +70,6 @@ impl ApplicationHandler<State> for App {
                     let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
                     let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
 
-                    s.chessboard.move_piece(grabbed_piece, (piece_space_x, piece_space_y));
                     println!("Tried moving {:?}", grabbed_piece);
                 }
             },
@@ -86,7 +85,8 @@ impl ApplicationHandler<State> for App {
                         let board_state = s.chessboard.get_board_state();
                         for (i, piece) in board_state.iter().enumerate() {
                             if let Some(p) = &piece {
-                                let (px, py) = p.position;
+                                let px = p.x as f32 * 0.25;
+                                let py = p.y as f32 * 0.25;
                                 if px <= piece_space_x && piece_space_x <= px + 0.25 && py <= piece_space_y && piece_space_y <= py + 0.25 {
                                     self.grabbed_piece = Some(i);
                                     println!("Grabbed {:?}", p.piece_type);
@@ -103,7 +103,7 @@ impl ApplicationHandler<State> for App {
                         let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
                         let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
 
-                        s.chessboard.move_piece(grabbed_piece, (piece_space_x, piece_space_y));
+                        // s.chessboard.move_piece(grabbed_piece, (piece_space_x, piece_space_y));
                         println!("Tried moving {:?}", grabbed_piece);
                     }
                     self.grabbed_piece = None;

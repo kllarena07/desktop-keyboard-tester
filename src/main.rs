@@ -1,5 +1,5 @@
 mod app;
-mod state;
+mod renderer;
 mod chessboard;
 mod piece;
 use crate::app::App;

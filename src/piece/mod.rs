@@ -1,11 +1,20 @@
-mod vertex;
-use vertex::Vertex;
+pub mod vertex;
 
-use wgpu::util::DeviceExt;
-use std::sync::Arc;
+const WHITE_PAWN_BYTES: &[u8] = include_bytes!("../../pieces/white/pawn.png");
+const WHITE_CASTLE_BYTES: &[u8] = include_bytes!("../../pieces/white/castle.png");
+const WHITE_KNIGHT_BYTES: &[u8] = include_bytes!("../../pieces/white/knight.png");
+const WHITE_BISHOP_BYTES: &[u8] = include_bytes!("../../pieces/white/bishop.png");
+const WHITE_KING_BYTES: &[u8] = include_bytes!("../../pieces/white/king.png");
+const WHITE_QUEEN_BYTES: &[u8]= include_bytes!("../../pieces/white/queen.png");
+const BLACK_PAWN_BYTES: &[u8] = include_bytes!("../../pieces/black/pawn.png");
+const BLACK_CASTLE_BYTES: &[u8] = include_bytes!("../../pieces/black/castle.png");
+const BLACK_KNIGHT_BYTES: &[u8] = include_bytes!("../../pieces/black/knight.png");
+const BLACK_BISHOP_BYTES: &[u8] = include_bytes!("../../pieces/black/bishop.png");
+const BLACK_KING_BYTES: &[u8] = include_bytes!("../../pieces/black/king.png");
+const BLACK_QUEEN_BYTES: &[u8]= include_bytes!("../../pieces/black/queen.png");
 
 #[derive(Debug)]
-pub enum SquareState {
+pub enum PieceType {
     WhitePawn,
     WhiteCastle,
     WhiteKnight,
@@ -20,270 +29,41 @@ pub enum SquareState {
     BlackQueen,
 }
 
-impl SquareState {
+impl PieceType {
     pub fn get_bytes(&self) -> &[u8] {
         match self {
-            SquareState::WhitePawn => include_bytes!("../../pieces/white/pawn.png"),
-            SquareState::WhiteCastle => include_bytes!("../../pieces/white/castle.png"),
-            SquareState::WhiteKnight => include_bytes!("../../pieces/white/knight.png"),
-            SquareState::WhiteBishop => include_bytes!("../../pieces/white/bishop.png"),
-            SquareState::WhiteKing => include_bytes!("../../pieces/white/king.png"),
-            SquareState::WhiteQueen => include_bytes!("../../pieces/white/queen.png"),
-            SquareState::BlackPawn => include_bytes!("../../pieces/black/pawn.png"),
-            SquareState::BlackCastle => include_bytes!("../../pieces/black/castle.png"),
-            SquareState::BlackKnight => include_bytes!("../../pieces/black/knight.png"),
-            SquareState::BlackBishop => include_bytes!("../../pieces/black/bishop.png"),
-            SquareState::BlackKing => include_bytes!("../../pieces/black/king.png"),
-            SquareState::BlackQueen => include_bytes!("../../pieces/black/queen.png")
+            PieceType::WhitePawn => WHITE_PAWN_BYTES,
+            PieceType::WhiteCastle => WHITE_CASTLE_BYTES,
+            PieceType::WhiteKnight => WHITE_KNIGHT_BYTES,
+            PieceType::WhiteBishop => WHITE_BISHOP_BYTES,
+            PieceType::WhiteKing => WHITE_KING_BYTES,
+            PieceType::WhiteQueen => WHITE_QUEEN_BYTES,
+            PieceType::BlackPawn => BLACK_PAWN_BYTES,
+            PieceType::BlackCastle => BLACK_CASTLE_BYTES,
+            PieceType::BlackKnight => BLACK_KNIGHT_BYTES,
+            PieceType::BlackBishop => BLACK_BISHOP_BYTES,
+            PieceType::BlackKing => BLACK_KING_BYTES,
+            PieceType::BlackQueen => BLACK_QUEEN_BYTES
         }
     }
 }
 
 #[derive(Debug)]
 pub struct Piece {
-    device: Arc<wgpu::Device>,
-    render_pipeline: wgpu::RenderPipeline,
-    diffuse_bind_group: wgpu::BindGroup,
-    vertex_buffer: wgpu::Buffer,
-    num_vertices: u32,
-    diffuse_texture: wgpu::Texture,
-    diffuse_rgba: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
-    texture_size: wgpu::Extent3d,
-    dimensions: (u32, u32),
-    pub position: (f32, f32),
-    pub piece_type: SquareState
+    pub piece_type: PieceType,
+    pub x: u32,
+    pub y: u32,
 }
 
 impl Piece {
-    pub fn new(device: Arc<wgpu::Device>, config: Arc<wgpu::SurfaceConfiguration>, piece_type: SquareState, x: f32, y: f32) -> Self {
-        let position: (f32, f32) = (x, y);
-        let diffuse_image = image::load_from_memory(piece_type.get_bytes()).unwrap();
-        let diffuse_rgba = diffuse_image.to_rgba8();
-
-        use image::GenericImageView;
-        let dimensions = diffuse_image.dimensions();
-
-        let texture_size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            // All textures are stored as 3D, we represent our 2D texture
-            // by setting depth to 1.
-            depth_or_array_layers: 1,
-        };
-        let diffuse_texture = device.create_texture(
-            &wgpu::TextureDescriptor {
-                size: texture_size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                // Most images are stored using sRGB, so we need to reflect that here.
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-                // COPY_DST means that we want to copy data to this texture
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                label: Some("diffuse_texture"),
-                // This is the same as with the SurfaceConfig. It
-                // specifies what texture formats can be used to
-                // create TextureViews for this texture. The base
-                // texture format (Rgba8UnormSrgb in this case) is
-                // always supported. Note that using a different
-                // texture format is not supported on the WebGL2
-                // backend.
-                view_formats: &[],
-            }
-        );
-
-        let vertices: [Vertex; 4] = [
-            Vertex { position: [-1.0 + x, 1.0 - y, 0.0], tex_coords: [0.0, 0.0] },
-            Vertex { position: [-1.0 + x, 0.75 - y, 0.0], tex_coords: [0.0, 1.0] },
-            Vertex { position: [-0.75 + x, 1.0 - y, 0.0], tex_coords: [1.0, 0.0] },
-            Vertex { position: [-0.75 + x, 0.75 - y, 0.0], tex_coords: [1.0, 1.0] },
-        ];
-
-        // We don't need to configure the texture view much, so let's
-        // let wgpu define it.
-        let diffuse_texture_view = diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
-            ..Default::default()
-        });
-
-        let texture_bind_group_layout =
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    // This should match the filterable field of the
-                    // corresponding Texture entry above.
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-            label: Some("texture_bind_group_layout"),
-        });
-
-        let render_pipeline_layout = device.create_pipeline_layout(
-            &wgpu::PipelineLayoutDescriptor {
-                label: Some("Piece Render Pipeline Layout"),
-                bind_group_layouts: &[Some(&texture_bind_group_layout)],
-                immediate_size: 0,
-            }
-        );
-
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("piece.wgsl").into())
-        });
-
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Piece Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[
-                    Vertex::desc()
-                ], // 2.
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview_mask: None,
-            cache: None,
-        });
-
-        let diffuse_bind_group = device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
-                    }
-                ],
-                label: Some("diffuse_bind_group"),
-            }
-        );
-
-        let num_vertices = vertices.len() as u32;
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX
-        });
-
+    pub fn new(piece_type: PieceType, x: u32, y: u32) -> Self {
+        // Piece-world coordinates are based off of the dimensions of actual chessboard
+        // e.g. (0,0), (1,0), ..., (7,7)
         Self {
-            device,
-            render_pipeline,
-            diffuse_bind_group,
-            vertex_buffer,
-            diffuse_texture,
-            diffuse_rgba,
-            texture_size,
-            num_vertices,
-            dimensions,
-            position,
-            piece_type
+            piece_type,
+            x,
+            y
         }
-    }
-
-    pub fn render_pipeline(&self) -> wgpu::RenderPipeline {
-        self.render_pipeline.clone()
-    }
-
-    pub fn diffuse_bind_group(&self) -> wgpu::BindGroup {
-        self.diffuse_bind_group.clone()
-    }
-
-    pub fn vertex_buffer(&self) -> wgpu::Buffer {
-        self.vertex_buffer.clone()
-    }
-
-    pub fn num_vertices(&self) -> u32 {
-        self.num_vertices
-    }
-
-    pub fn diffuse_texture(&self) -> wgpu::Texture {
-        self.diffuse_texture.clone()
-    }
-
-    pub fn diffuse_rgba(&self) -> image::ImageBuffer<image::Rgba<u8>, Vec<u8>> {
-        self.diffuse_rgba.clone()
-    }
-
-    pub fn texture_size(&self) -> wgpu::Extent3d {
-        self.texture_size
-    }
-
-    pub fn dimensions(&self) -> (u32, u32) {
-        self.dimensions
-    }
-    
-    pub fn move_piece(&mut self, position: (f32, f32)) {
-        let (x, y) = position;
-        let vertices: [Vertex; 4] = [
-            Vertex { position: [-1.0 + x, 1.0 - y, 0.0], tex_coords: [0.0, 0.0] },
-            Vertex { position: [-1.0 + x, 0.75 - y, 0.0], tex_coords: [0.0, 1.0] },
-            Vertex { position: [-0.75 + x, 1.0 - y, 0.0], tex_coords: [1.0, 0.0] },
-            Vertex { position: [-0.75 + x, 0.75 - y, 0.0], tex_coords: [1.0, 1.0] },
-        ];
-
-        let vertex_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX
-        });
-
-        self.vertex_buffer = vertex_buffer;
-        self.position = position;
     }
 }
 
