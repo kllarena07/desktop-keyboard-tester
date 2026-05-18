@@ -104,7 +104,6 @@ impl Renderer {
         let mut piece_num_vertices = vec![];
         let mut piece_identity_map = [None; 64];
 
-        let mut piece_identity = 0;
         for (board_index, piece) in pieces.iter().enumerate().filter_map(|(i, p)| p.as_ref().map(|p| (i, p))) {
             let resources = Self::create_piece_resources(&device, &queue, piece, board_index, &piece_texture_bind_group_layout);
             piece_textures.push(resources.texture);
@@ -113,8 +112,7 @@ impl Renderer {
             piece_bind_groups.push(resources.bind_group);
             piece_vertex_buffers.push(resources.vertex_buffer);
             piece_num_vertices.push(resources.num_vertices);
-            piece_identity_map[board_index] = Some(piece_identity);
-            piece_identity += 1;
+            piece_identity_map[board_index] = Some(board_index);
         }
 
         Ok(Self {
@@ -419,8 +417,6 @@ impl Renderer {
             self.piece_identity_map[to_index] = Some(piece_identity);
         }
     }
-
-    pub fn update(&mut self) {}
 
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();

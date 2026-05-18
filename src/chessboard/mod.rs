@@ -58,13 +58,11 @@ impl Chessboard {
         let (board_x, board_y) = new_position;
         let new_board_pos = (board_x + (board_y * 8)) as usize;
 
-        if let Some(existing_index) = self.board_state.get(selected_index) {
-            if let Some(piece) = existing_index {
-                println!("({}, {}) ... {} {:?}", board_x, board_y, selected_index, piece);
-                self.board_state[new_board_pos] = Some(piece.clone());
-                self.board_state[selected_index] = None;
-                println!("{:?}", self.board_state);
-            }
+        if let Some(existing_index) = self.board_state.get(selected_index) && let Some(piece) = existing_index {
+            println!("({}, {}) ... {} {:?}", board_x, board_y, selected_index, piece);
+            self.board_state[new_board_pos] = Some(piece.clone());
+            self.board_state[selected_index] = None;
+            println!("{:?}", self.board_state);
         }
     }
 }

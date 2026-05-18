@@ -50,7 +50,6 @@ impl ApplicationHandler<Renderer> for App {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
-                state.update();
                 match state.render() {
                     Ok(_) => {}
                     Err(e) => {
@@ -62,16 +61,6 @@ impl ApplicationHandler<Renderer> for App {
             }
             WindowEvent::CursorMoved { device_id: _, position } => {
                 self.mouse_position = Some(position);
-
-                // if let (Some(grabbed_piece), Some(s)) = (self.grabbed_piece, self.state.as_mut()) {
-                //     let mouse_pixel = self.mouse_position.unwrap();
-                //     let (mx, my): (f32, f32) = mouse_pixel.into();
-                //
-                //     let piece_space_x = ((mx - 35.0) / 600.0) * 2.0;
-                //     let piece_space_y = ((my - 35.0) / 600.0) * 2.0;
-                //
-                //     println!("Tried moving {:?}", grabbed_piece);
-                // }
             },
             WindowEvent::MouseInput { state, button, .. } => match (button, state.is_pressed()) {
                 (MouseButton::Left, true) => {
@@ -88,11 +77,9 @@ impl ApplicationHandler<Renderer> for App {
                         let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
                         let new_board_pos = board_x + (board_y * 8);
 
-                        if let Some(grabbed_piece) = self.grabbed_piece {
-                            if let Some(state) = self.state.as_mut() {
-                                state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
-                                state.update_piece_identity(grabbed_piece, new_board_pos);
-                            }
+                        if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() {
+                            state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
+                            state.update_piece_identity(grabbed_piece, new_board_pos);
                         }
                     }
                 }
