@@ -301,7 +301,7 @@ impl Renderer {
         board_index: usize,
         bind_group_layout: &wgpu::BindGroupLayout
     ) -> PieceGpuResources {
-        let diffuse_image = image::load_from_memory(piece.piece_type.get_bytes()).unwrap();
+        let diffuse_image = image::load_from_memory(piece.get_bytes()).unwrap();
         let diffuse_rgba = diffuse_image.to_rgba8();
 
         use image::GenericImageView;

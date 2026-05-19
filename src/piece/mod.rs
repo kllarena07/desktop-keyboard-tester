@@ -15,48 +15,47 @@ const BLACK_QUEEN_BYTES: &[u8]= include_bytes!("../../pieces/black/queen.png");
 
 #[derive(Debug, Clone)]
 pub enum PieceType {
-    WhitePawn,
-    WhiteCastle,
-    WhiteKnight,
-    WhiteBishop,
-    WhiteKing,
-    WhiteQueen,
-    BlackPawn,
-    BlackCastle,
-    BlackKnight,
-    BlackBishop,
-    BlackKing,
-    BlackQueen,
+    Pawn,
+    Castle,
+    Knight,
+    Bishop,
+    King,
+    Queen,
 }
 
-impl PieceType {
-    pub fn get_bytes(&self) -> &[u8] {
-        match self {
-            PieceType::WhitePawn => WHITE_PAWN_BYTES,
-            PieceType::WhiteCastle => WHITE_CASTLE_BYTES,
-            PieceType::WhiteKnight => WHITE_KNIGHT_BYTES,
-            PieceType::WhiteBishop => WHITE_BISHOP_BYTES,
-            PieceType::WhiteKing => WHITE_KING_BYTES,
-            PieceType::WhiteQueen => WHITE_QUEEN_BYTES,
-            PieceType::BlackPawn => BLACK_PAWN_BYTES,
-            PieceType::BlackCastle => BLACK_CASTLE_BYTES,
-            PieceType::BlackKnight => BLACK_KNIGHT_BYTES,
-            PieceType::BlackBishop => BLACK_BISHOP_BYTES,
-            PieceType::BlackKing => BLACK_KING_BYTES,
-            PieceType::BlackQueen => BLACK_QUEEN_BYTES
-        }
-    }
+#[derive(Debug, Clone)]
+pub enum PieceColor {
+    White,
+    Black
 }
 
 #[derive(Debug, Clone)]
 pub struct Piece {
-    pub piece_type: PieceType,
+    piece_type: PieceType,
+    piece_color: PieceColor
 }
 
 impl Piece {
-    pub fn new(piece_type: PieceType) -> Self {
+    pub fn new(piece_type: PieceType, piece_color: PieceColor) -> Self {
         Self {
             piece_type,
+            piece_color
+        }
+    }
+    pub fn get_bytes(&self) -> &[u8] {
+        match (&self.piece_type, &self.piece_color) {
+            (PieceType::Pawn, PieceColor::White) => WHITE_PAWN_BYTES,
+            (PieceType::Castle, PieceColor::White) => WHITE_CASTLE_BYTES,
+            (PieceType::Knight, PieceColor::White) => WHITE_KNIGHT_BYTES,
+            (PieceType::Bishop, PieceColor::White) => WHITE_BISHOP_BYTES,
+            (PieceType::King, PieceColor::White) => WHITE_KING_BYTES,
+            (PieceType::Queen, PieceColor::White) => WHITE_QUEEN_BYTES,
+            (PieceType::Pawn, PieceColor::Black) => BLACK_PAWN_BYTES,
+            (PieceType::Castle, PieceColor::Black) => BLACK_CASTLE_BYTES,
+            (PieceType::Knight, PieceColor::Black) => BLACK_KNIGHT_BYTES,
+            (PieceType::Bishop, PieceColor::Black) => BLACK_BISHOP_BYTES,
+            (PieceType::King, PieceColor::Black) => BLACK_KING_BYTES,
+            (PieceType::Queen, PieceColor::Black) => BLACK_QUEEN_BYTES
         }
     }
 }
