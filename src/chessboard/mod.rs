@@ -1,5 +1,5 @@
 use crate::piece::{Piece, PieceColor, PieceType};
-use crate::movement::would_leave_king_in_check;
+use crate::piece::movement::would_leave_king_in_check;
 
 pub mod vertex;
 

@@ -1,5 +1,6 @@
-use crate::movement::{coordinates_from_index, index_from_coordinates, is_path_clear};
+use crate::piece::movement::{coordinates_from_index, index_from_coordinates, is_path_clear};
 
+pub mod movement;
 pub mod vertex;
 
 const WHITE_PAWN_BYTES: &[u8] = include_bytes!("../../pieces/white/pawn.png");
@@ -66,8 +67,8 @@ impl Piece {
         
         let (from_x, from_y) = coordinates_from_index(from);
         let (to_x, to_y) = coordinates_from_index(to);
-        let dx = (to_x as i32 - from_x as i32);
-        let dy = (to_y as i32 - from_y as i32);
+        let dx = to_x as i32 - from_x as i32;
+        let dy = to_y as i32 - from_y as i32;
         
         let target_piece = board[to].as_ref();
         
@@ -164,7 +165,8 @@ impl Piece {
                 if board[index_from_coordinates(5, 7)].is_none() && 
                    board[index_from_coordinates(6, 7)].is_none() &&
                    is_path_clear(from, to, board) {
-                    if let Some(rook) = board[index_from_coordinates(7, 7)].as_ref() {
+                    if let Some(ref rook) = board[index_from_coordinates(7, 7)] {
+                        let rook: &Piece = rook;
                         if rook.get_type() == PieceType::Castle && !rook.has_moved() {
                             return true;
                         }
@@ -175,7 +177,8 @@ impl Piece {
                    board[index_from_coordinates(2, 7)].is_none() &&
                    board[index_from_coordinates(1, 7)].is_none() &&
                    is_path_clear(from, to, board) {
-                    if let Some(rook) = board[index_from_coordinates(0, 7)].as_ref() {
+                    if let Some(ref rook) = board[index_from_coordinates(0, 7)] {
+                        let rook: &Piece = rook;
                         if rook.get_type() == PieceType::Castle && !rook.has_moved() {
                             return true;
                         }
@@ -189,7 +192,8 @@ impl Piece {
                 if board[index_from_coordinates(5, 0)].is_none() && 
                    board[index_from_coordinates(6, 0)].is_none() &&
                    is_path_clear(from, to, board) {
-                    if let Some(rook) = board[index_from_coordinates(7, 0)].as_ref() {
+                    if let Some(ref rook) = board[index_from_coordinates(7, 0)] {
+                        let rook: &Piece = rook;
                         if rook.get_type() == PieceType::Castle && !rook.has_moved() {
                             return true;
                         }
@@ -200,7 +204,8 @@ impl Piece {
                    board[index_from_coordinates(2, 0)].is_none() &&
                    board[index_from_coordinates(1, 0)].is_none() &&
                    is_path_clear(from, to, board) {
-                    if let Some(rook) = board[index_from_coordinates(0, 0)].as_ref() {
+                    if let Some(ref rook) = board[index_from_coordinates(0, 0)] {
+                        let rook: &Piece = rook;
                         if rook.get_type() == PieceType::Castle && !rook.has_moved() {
                             return true;
                         }

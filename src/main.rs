@@ -2,7 +2,6 @@ mod app;
 mod renderer;
 mod chessboard;
 mod piece;
-mod movement;
 use crate::app::App;
 
 use winit::{

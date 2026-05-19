@@ -92,8 +92,8 @@ pub fn is_square_attacked(square: usize, attacker_color: PieceColor, board: &[Op
                         }
                     }
                     PieceType::Castle | PieceType::Queen => {
-                        let dx = (from_x as i32 - target_x as i32);
-                        let dy = (from_y as i32 - target_y as i32);
+                        let dx = from_x as i32 - target_x as i32;
+                        let dy = from_y as i32 - target_y as i32;
                         if dx == 0 || dy == 0 {
                             if is_path_clear(index, square, board) {
                                 return true;
