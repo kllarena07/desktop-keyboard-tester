@@ -1,4 +1,4 @@
-use crate::piece::{PieceColor};
+use crate::piece::PieceColor;
 
 use crate::renderer::Renderer;
 
@@ -74,12 +74,18 @@ impl ApplicationHandler<Renderer> for App {
                             let new_board_pos = board_x + (board_y * 8);
 
                             if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
-                                state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
-                                self.grabbed_piece = None;
-                                self.current_turn = match self.current_turn {
-                                    PieceColor::White => PieceColor::Black,
-                                    PieceColor::Black => PieceColor::White,
-                                };
+                                match state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32), self.current_turn) {
+                                    Ok(_) => {
+                                        self.grabbed_piece = None;
+                                        self.current_turn = match self.current_turn {
+                                            PieceColor::White => PieceColor::Black,
+                                            PieceColor::Black => PieceColor::White,
+                                        };
+                                    }
+                                    Err(e) => {
+                                        println!("Invalid move: {:?}", e);
+                                    }
+                                }
                             }
                         } else {
                             let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
@@ -102,12 +108,18 @@ impl ApplicationHandler<Renderer> for App {
                         let new_board_pos = board_x + (board_y * 8);
 
                         if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
-                            state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
-                            self.grabbed_piece = None;
-                            self.current_turn = match self.current_turn {
-                                PieceColor::White => PieceColor::Black,
-                                PieceColor::Black => PieceColor::White,
-                            };
+                            match state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32), self.current_turn) {
+                                Ok(_) => {
+                                    self.grabbed_piece = None;
+                                    self.current_turn = match self.current_turn {
+                                        PieceColor::White => PieceColor::Black,
+                                        PieceColor::Black => PieceColor::White,
+                                    };
+                                }
+                                Err(e) => {
+                                    println!("Invalid move: {:?}", e);
+                                }
+                            }
                         }
                     }
                 }
