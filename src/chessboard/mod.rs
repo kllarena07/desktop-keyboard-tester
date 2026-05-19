@@ -25,7 +25,7 @@ impl Chessboard {
             Some(Piece::new(PieceType::BlackPawn)),
             Some(Piece::new(PieceType::BlackPawn)),
             Some(Piece::new(PieceType::BlackPawn)),
-            Some(Piece::new(PieceType::WhitePawn)), None, None, None, None, None, None, None,
+            None, None, None, None, None, None, None, None,
             None, None, None, None, None, None, None, None,
             None, None, None, None, None, None, None, None,
             None, None, None, None, None, None, None, None,
