@@ -23,7 +23,7 @@ pub enum PieceType {
     Queen,
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum PieceColor {
     White,
     Black
@@ -41,6 +41,9 @@ impl Piece {
             piece_type,
             piece_color
         }
+    }
+    pub fn get_color(&self) -> &PieceColor {
+        &self.piece_color
     }
     pub fn get_bytes(&self) -> &[u8] {
         match (&self.piece_type, &self.piece_color) {

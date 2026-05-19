@@ -1,3 +1,5 @@
+use crate::piece::{PieceColor};
+
 use crate::renderer::Renderer;
 
 use std::{sync::Arc};
@@ -8,7 +10,8 @@ use winit::{
 pub struct App {
     pub state: Option<Renderer>,
     mouse_position: Option<PhysicalPosition<f64>>,
-    grabbed_piece: Option<usize>
+    grabbed_piece: Option<usize>,
+    current_turn: PieceColor
 }
 
 impl App {
@@ -17,6 +20,7 @@ impl App {
             state: None,
             mouse_position: None,
             grabbed_piece: None,
+            current_turn: PieceColor::White,
         }
     }
 }
@@ -72,13 +76,23 @@ impl ApplicationHandler<Renderer> for App {
                             if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
                                 state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
                                 self.grabbed_piece = None;
+                                self.current_turn = match self.current_turn {
+                                    PieceColor::White => PieceColor::Black,
+                                    PieceColor::Black => PieceColor::White,
+                                };
                             }
                         } else {
                             let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
-                            // this is effectively row number + column number 
                             let selected_board_state_index = board_x + (board_y * 8);
-                            self.grabbed_piece = Some(selected_board_state_index);
-                            println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
+                            if let Some(state) = self.state.as_mut() {
+                                let board_state = state.chessboard.get_board_state();
+                                if let Some(Some(piece)) = board_state.get(selected_board_state_index) {
+                                    if piece.get_color() == &self.current_turn {
+                                        self.grabbed_piece = Some(selected_board_state_index);
+                                        println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -90,6 +104,10 @@ impl ApplicationHandler<Renderer> for App {
                         if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
                             state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
                             self.grabbed_piece = None;
+                            self.current_turn = match self.current_turn {
+                                PieceColor::White => PieceColor::Black,
+                                PieceColor::Black => PieceColor::White,
+                            };
                         }
                     }
                 }
