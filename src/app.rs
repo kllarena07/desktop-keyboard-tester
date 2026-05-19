@@ -65,21 +65,31 @@ impl ApplicationHandler<Renderer> for App {
             WindowEvent::MouseInput { state, button, .. } => match (button, state.is_pressed()) {
                 (MouseButton::Left, true) => {
                     if let Some(mouse_position) = self.mouse_position {
-                        let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
-                        // this is effectively row number + column number 
-                        let selected_board_state_index = board_x + (board_y * 8);
-                        self.grabbed_piece = Some(selected_board_state_index);
-                        println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
+                        if self.grabbed_piece.is_some() {
+                            let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
+                            let new_board_pos = board_x + (board_y * 8);
+
+                            if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
+                                state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
+                                self.grabbed_piece = None;
+                            }
+                        } else {
+                            let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
+                            // this is effectively row number + column number 
+                            let selected_board_state_index = board_x + (board_y * 8);
+                            self.grabbed_piece = Some(selected_board_state_index);
+                            println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
+                        }
                     }
                 }
                 (MouseButton::Left, false) => {
                     if let Some(mouse_position) = self.mouse_position {
                         let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
-                        // let new_board_pos = board_x + (board_y * 8);
+                        let new_board_pos = board_x + (board_y * 8);
 
-                        if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() {
+                        if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() && new_board_pos != grabbed_piece {
                             state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
-                            // state.update_piece_identity(grabbed_piece, new_board_pos);
+                            self.grabbed_piece = None;
                         }
                     }
                 }
