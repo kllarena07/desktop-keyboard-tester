@@ -6,9 +6,6 @@ use crate::chessboard::{Chessboard, vertex::ChessboardVertex};
 use crate::piece::{Piece, vertex::PieceVertex};
 
 struct PieceGpuResources {
-    texture: wgpu::Texture,
-    diffuse_view: wgpu::TextureView,
-    sampler: wgpu::Sampler,
     bind_group: wgpu::BindGroup,
     vertex_buffer: wgpu::Buffer,
     num_vertices: u32,
@@ -26,11 +23,10 @@ pub struct Renderer {
     chessboard_vertex_buffer: wgpu::Buffer,
     chessboard_num_vertices: u32,
 
-    piece_identity_map: [Option<usize>; 64],
     piece_render_pipeline: wgpu::RenderPipeline,
-    piece_bind_groups: Vec<wgpu::BindGroup>,
-    piece_vertex_buffers: Vec<wgpu::Buffer>,
-    piece_num_vertices: Vec<u32>,
+    piece_bind_groups: [Option<wgpu::BindGroup>; 64],
+    piece_vertex_buffers: [Option<wgpu::Buffer>; 64],
+    piece_num_vertices: [Option<u32>; 64],
 }
 
 impl Renderer {
@@ -96,23 +92,17 @@ impl Renderer {
         let piece_texture_bind_group_layout = Self::create_piece_bind_group_layout(&device);
         let piece_render_pipeline = Self::create_piece_render_pipeline(&device, &config, &piece_texture_bind_group_layout);
 
-        let mut piece_textures = vec![];
-        let mut piece_diffuse_views = vec![];
-        let mut piece_samplers = vec![];
-        let mut piece_bind_groups = vec![];
-        let mut piece_vertex_buffers = vec![];
-        let mut piece_num_vertices = vec![];
-        let mut piece_identity_map = [None; 64];
+        let mut piece_bind_groups: [Option<wgpu::BindGroup>; 64] = std::array::from_fn(|_| None);
+        let mut piece_vertex_buffers: [Option<wgpu::Buffer>; 64] = std::array::from_fn(|_| None);
+        let mut piece_num_vertices: [Option<u32>; 64] = std::array::from_fn(|_| None);
 
-        for (board_index, piece) in pieces.iter().enumerate().filter_map(|(i, p)| p.as_ref().map(|p| (i, p))) {
-            let resources = Self::create_piece_resources(&device, &queue, piece, board_index, &piece_texture_bind_group_layout);
-            piece_textures.push(resources.texture);
-            piece_diffuse_views.push(resources.diffuse_view);
-            piece_samplers.push(resources.sampler);
-            piece_bind_groups.push(resources.bind_group);
-            piece_vertex_buffers.push(resources.vertex_buffer);
-            piece_num_vertices.push(resources.num_vertices);
-            piece_identity_map[board_index] = Some(board_index);
+        for (board_index, piece) in pieces.iter().enumerate() {
+            if let Some(piece) = piece {
+                let resources = Self::create_piece_resources(&device, &queue, piece, board_index, &piece_texture_bind_group_layout);
+                piece_bind_groups[board_index] = Some(resources.bind_group);
+                piece_vertex_buffers[board_index] = Some(resources.vertex_buffer);
+                piece_num_vertices[board_index] = Some(resources.num_vertices);
+            }
         }
 
         Ok(Self {
@@ -126,7 +116,6 @@ impl Renderer {
             chessboard_vertex_buffer,
             chessboard_num_vertices,
             piece_render_pipeline,
-            piece_identity_map,
             piece_bind_groups,
             piece_vertex_buffers,
             piece_num_vertices,
@@ -402,23 +391,46 @@ impl Renderer {
         );
 
         PieceGpuResources {
-            texture: diffuse_texture,
-            diffuse_view: diffuse_texture_view,
-            sampler: diffuse_sampler,
             bind_group: diffuse_bind_group,
             vertex_buffer,
             num_vertices,
         }
     }
 
-    pub fn update_piece_identity(&mut self, from_index: usize, to_index: usize) {
-        if let Some(piece_identity) = self.piece_identity_map[from_index] {
-            self.piece_identity_map[from_index] = None;
-            self.piece_identity_map[to_index] = Some(piece_identity);
+    // pub fn update_piece_identity(&mut self, from_index: usize, to_index: usize) {
+    //     if let Some(piece_identity) = self.piece_identity_map[from_index] {
+    //         self.piece_identity_map[from_index] = None;
+    //         self.piece_identity_map[to_index] = Some(piece_identity);
+    //     }
+    // }
+
+    pub fn rebuild_all_piece_resources(&mut self) {
+        let pieces = self.chessboard.get_board_state();
+        let piece_texture_bind_group_layout = Self::create_piece_bind_group_layout(&self.device);
+
+        self.piece_bind_groups = std::array::from_fn(|_| None);
+        self.piece_vertex_buffers = std::array::from_fn(|_| None);
+        self.piece_num_vertices = std::array::from_fn(|_| None);
+
+        for (board_index, piece) in pieces.iter().enumerate() {
+            if let Some(piece) = piece {
+                let resources = Self::create_piece_resources(
+                    &self.device,
+                    &self.queue,
+                    piece,
+                    board_index,
+                    &piece_texture_bind_group_layout
+                );
+                self.piece_bind_groups[board_index] = Some(resources.bind_group);
+                self.piece_vertex_buffers[board_index] = Some(resources.vertex_buffer);
+                self.piece_num_vertices[board_index] = Some(resources.num_vertices);
+            }
         }
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
+        self.rebuild_all_piece_resources();
+
         self.window.request_redraw();
 
         let output = match self.surface.get_current_texture() {
@@ -483,8 +495,8 @@ impl Renderer {
 
             let pieces = self.chessboard.get_board_state();
 
-            for (board_index, _piece_opt) in pieces.iter().enumerate() {
-                if let Some(piece_identity) = self.piece_identity_map[board_index] {
+            for (board_index, piece) in pieces.iter().enumerate() {
+                if piece.is_some() {
                     let board_x = (board_index % 8) as f32;
                     let board_y = (board_index / 8) as f32;
 
@@ -498,16 +510,17 @@ impl Renderer {
                         PieceVertex { position: [-0.75 + x, 0.75 - y, 0.0], tex_coords: [1.0, 1.0] },
                     ];
 
-                    self.queue.write_buffer(
-                        &self.piece_vertex_buffers[piece_identity],
-                        0,
-                        bytemuck::cast_slice(&vertices),
-                    );
+                    let vertex_buffer = self.piece_vertex_buffers[board_index].as_ref();
+                    let bind_group = self.piece_bind_groups[board_index].as_ref();
+                    let num_vertices = self.piece_num_vertices[board_index];
 
-                    render_pass.set_pipeline(&self.piece_render_pipeline);
-                    render_pass.set_bind_group(0, &self.piece_bind_groups[piece_identity], &[]);
-                    render_pass.set_vertex_buffer(0, self.piece_vertex_buffers[piece_identity].slice(..));
-                    render_pass.draw(0..self.piece_num_vertices[piece_identity], 0..1);
+                    if let (Some(vertex_buffer), Some(bind_group), Some(num_vertices)) = (vertex_buffer, bind_group, num_vertices) {
+                        self.queue.write_buffer(vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+                        render_pass.set_pipeline(&self.piece_render_pipeline);
+                        render_pass.set_bind_group(0, bind_group, &[]);
+                        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                        render_pass.draw(0..num_vertices, 0..1);
+                    }
                 }
             }
         }

@@ -75,11 +75,11 @@ impl ApplicationHandler<Renderer> for App {
                 (MouseButton::Left, false) => {
                     if let Some(mouse_position) = self.mouse_position {
                         let (board_x, board_y) = ((mouse_position.x / 75.0) as usize, (mouse_position.y / 75.0) as usize);
-                        let new_board_pos = board_x + (board_y * 8);
+                        // let new_board_pos = board_x + (board_y * 8);
 
                         if let Some(grabbed_piece) = self.grabbed_piece && let Some(state) = self.state.as_mut() {
                             state.chessboard.move_piece(grabbed_piece, (board_x as u32, board_y as u32));
-                            state.update_piece_identity(grabbed_piece, new_board_pos);
+                            // state.update_piece_identity(grabbed_piece, new_board_pos);
                         }
                     }
                 }
