@@ -54,7 +54,7 @@ impl ApplicationHandler<Renderer> for App {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {
-                match state.render() {
+                match state.render(self.grabbed_piece) {
                     Ok(_) => {}
                     Err(e) => {
                         // Log the error and exit gracefully
@@ -92,11 +92,9 @@ impl ApplicationHandler<Renderer> for App {
                             let selected_board_state_index = board_x + (board_y * 8);
                             if let Some(state) = self.state.as_mut() {
                                 let board_state = state.chessboard.get_board_state();
-                                if let Some(Some(piece)) = board_state.get(selected_board_state_index) {
-                                    if piece.get_color() == &self.current_turn {
-                                        self.grabbed_piece = Some(selected_board_state_index);
-                                        println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
-                                    }
+                                if let Some(Some(piece)) = board_state.get(selected_board_state_index) && piece.get_color() == &self.current_turn {
+                                    self.grabbed_piece = Some(selected_board_state_index);
+                                    println!("({}, {}) = {}. Grabbed {:?}", board_x, board_y, board_x + (board_y*8), self.grabbed_piece);
                                 }
                             }
                         }

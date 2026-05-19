@@ -17,7 +17,7 @@ pub struct Renderer {
     pub queue: wgpu::Queue,
     pub config: Arc<wgpu::SurfaceConfiguration>,
     pub window: Arc<Window>,
-    
+
     pub chessboard: Chessboard,
     chessboard_render_pipeline: wgpu::RenderPipeline,
     chessboard_vertex_buffer: wgpu::Buffer,
@@ -87,7 +87,7 @@ impl Renderer {
         let pieces = chessboard.get_board_state();
 
         let chessboard_render_pipeline = Self::create_chessboard_pipeline(&device, &config);
-        let (chessboard_vertex_buffer, chessboard_num_vertices) = Self::create_chessboard_vertex_buffer(&device);
+        let (chessboard_vertex_buffer, chessboard_num_vertices) = Self::create_chessboard_vertex_buffer(&device, None);
 
         let piece_texture_bind_group_layout = Self::create_piece_bind_group_layout(&device);
         let piece_render_pipeline = Self::create_piece_render_pipeline(&device, &config, &piece_texture_bind_group_layout);
@@ -176,16 +176,24 @@ impl Renderer {
         })
     }
 
-    fn create_chessboard_vertex_buffer(device: &wgpu::Device) -> (wgpu::Buffer, u32) {
+    fn create_chessboard_vertex_buffer(device: &wgpu::Device, grabbed_piece: Option<usize>) -> (wgpu::Buffer, u32) {
         const WHITE: [f32; 3] = [0.925, 0.925, 0.800];
         const GREEN: [f32; 3] = [0.450, 0.667, 0.290];
+        const YELLOW: [f32; 3] = [1.0, 1.0, 0.502];
 
         let mut vertices: Vec<ChessboardVertex> = vec![];
 
         for i in 0..64 {
             let col = i % 8;
             let row = i / 8;
-            let color = if (row + col) % 2 == 0 { WHITE } else { GREEN };
+            let base_color = if (row + col) % 2 == 0 { WHITE } else { GREEN };
+            let color = if Some(i) == grabbed_piece {
+                [base_color[0] * 0.25 + YELLOW[0] * 0.75,
+                 base_color[1] * 0.25 + YELLOW[1] * 0.75,
+                 base_color[2] * 0.25 + YELLOW[2] * 0.75]
+            } else {
+                base_color
+            };
 
             let x_offset = ((i % 8) as f32) * 0.25;
             let y_offset = ((i / 8) as f32) * 0.25;
@@ -209,6 +217,12 @@ impl Renderer {
         });
 
         (vertex_buffer, num_vertices)
+    }
+
+    pub fn update_chessboard_vertex_buffer(&mut self, grabbed_piece: Option<usize>) {
+        let (new_buffer, num_vertices) = Self::create_chessboard_vertex_buffer(&self.device, grabbed_piece);
+        self.chessboard_vertex_buffer = new_buffer;
+        self.chessboard_num_vertices = num_vertices;
     }
 
     fn create_piece_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
@@ -428,7 +442,9 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) -> anyhow::Result<()> {
+    pub fn render(&mut self, grabbed_piece: Option<usize>) -> anyhow::Result<()> {
+        self.update_chessboard_vertex_buffer(grabbed_piece);
+
         self.rebuild_all_piece_resources();
 
         self.window.request_redraw();
