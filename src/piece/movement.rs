@@ -100,7 +100,7 @@ pub fn is_square_attacked(square: usize, attacker_color: PieceColor, board: &[Op
                             }
                         }
                     }
-                    PieceType::Bishop | PieceType::Queen => {
+                    PieceType::Bishop => {
                         let dx = (from_x as i32 - target_x as i32).abs();
                         let dy = (from_y as i32 - target_y as i32).abs();
                         if dx == dy {

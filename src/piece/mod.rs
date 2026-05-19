@@ -87,19 +87,7 @@ impl Piece {
             PieceType::Queen => self.is_valid_queen_move(from, to, dx, dy, board),
         }
     }
-    
-    pub fn get_legal_moves(&self, from: usize, board: &[Option<Piece>], en_passant_target: Option<usize>) -> Vec<usize> {
-        let mut legal_moves = Vec::new();
-        
-        for to in 0..64 {
-            if self.is_valid_move(from, to, board, en_passant_target) {
-                legal_moves.push(to);
-            }
-        }
-        
-        legal_moves
-    }
-    
+
     fn is_valid_pawn_move(&self, from_x: u32, from_y: u32, to_x: u32, to_y: u32, dx: i32, dy: i32, target_piece: Option<&Piece>, board: &[Option<Piece>], en_passant_target: Option<usize>) -> bool {
         let direction = if self.piece_color == PieceColor::White { -1 } else { 1 };
         let start_row = if self.piece_color == PieceColor::White { 6 } else { 1 };
@@ -133,7 +121,7 @@ impl Piece {
         false
     }
     
-    fn is_valid_castle_move(&self, from: usize, to: usize, dx: i32, dy: i32, target_piece: Option<&Piece>, board: &[Option<Piece>]) -> bool {
+    fn is_valid_castle_move(&self, from: usize, to: usize, dx: i32, dy: i32, _target_piece: Option<&Piece>, board: &[Option<Piece>]) -> bool {
         if dx == 0 || dy == 0 {
             if is_path_clear(from, to, board) {
                 return true;
@@ -155,7 +143,7 @@ impl Piece {
         false
     }
     
-    fn is_valid_king_move(&self, from: usize, to: usize, from_x: u32, from_y: u32, to_x: u32, to_y: u32, dx: i32, dy: i32, board: &[Option<Piece>]) -> bool {
+    fn is_valid_king_move(&self, from: usize, to: usize, _from_x: u32, from_y: u32, to_x: u32, to_y: u32, dx: i32, dy: i32, board: &[Option<Piece>]) -> bool {
         if dx.abs() <= 1 && dy.abs() <= 1 {
             return true;
         }

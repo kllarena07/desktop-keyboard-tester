@@ -6,8 +6,7 @@ pub mod vertex;
 #[derive(Debug)]
 pub enum MoveError {
     NoPieceAtSource,
-    InvalidMove(String),
-    PathBlocked,
+    InvalidMove,
     WouldLeaveKingInCheck,
     NotYourTurn,
 }
@@ -68,10 +67,6 @@ impl Chessboard {
         &self.board_state
     }
     
-    pub fn get_piece_mut(&mut self, index: usize) -> Option<&mut Piece> {
-        self.board_state[index].as_mut()
-    }
-    
     pub fn get_en_passant_target(&self) -> Option<usize> {
         if let Some((from, to)) = self.last_pawn_double_push {
             let _direction = if to < 32 { 1 } else { -1 };
@@ -91,7 +86,7 @@ impl Chessboard {
     
     pub fn is_valid_move(&mut self, from: usize, to: usize, current_turn: PieceColor) -> Result<(), MoveError> {
         if from >= 64 || to >= 64 {
-            return Err(MoveError::InvalidMove("Invalid square index".to_string()));
+            return Err(MoveError::InvalidMove);
         }
         
         let piece = self.board_state[from].as_ref().ok_or(MoveError::NoPieceAtSource)?;
@@ -103,7 +98,7 @@ impl Chessboard {
         let en_passant_target = self.get_en_passant_target();
         
         if !piece.is_valid_move(from, to, &self.board_state, en_passant_target) {
-            return Err(MoveError::InvalidMove("Invalid move for piece type".to_string()));
+            return Err(MoveError::InvalidMove);
         }
         
         if would_leave_king_in_check(from, to, current_turn, &self.board_state) {
