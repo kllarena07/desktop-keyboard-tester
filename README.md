@@ -4,6 +4,10 @@
 
 This past Winter 2026 semester I had started getting back into chess after playing it at a coffee chat with a [fellow V1 member](https://www.linkedin.com/in/nikita-nayunipati-193b55276/). I had also been wanting to learn about wgpu, so I thought, with this timing, I might as well try and make chess in wgpu. To restate, the main point of this exercise was to learn wgpu while also remaking a fun game that had recently come back into my life.
 
+## Demo
+
+<img width="1136" height="480" alt="demo" src="https://github.com/user-attachments/assets/5b3add87-010f-440b-b3f3-f27809685eac" />
+
 ## What I Learned
 
 Before we start drawing, we need to create a surface which is just an area on the window that we want to we draw on. You do this by first initilizaing a wgpu Instance. We then use this instance to identify all of the GPU devices that are available to us (which are called `Adapters`) and then used to create a `device` object and the `queue` that we will use to pass data from the CPU to the GPU (we'll get into this later).
